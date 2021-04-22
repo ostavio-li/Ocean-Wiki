@@ -5,7 +5,6 @@ import com.carlos.util.nlp.NLPUtil;
 import com.carlos.util.reg.RegUtil;
 import com.github.houbb.opencc4j.util.ZhConverterUtil;
 import org.neo4j.driver.*;
-import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.*;
 
