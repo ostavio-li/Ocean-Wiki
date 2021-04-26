@@ -152,12 +152,26 @@ public class NLPUtil {
      * 解析问句，获得三元组
      * @param question 问句
      */
-    public static void parseQuestion(String question) {
+    public static String[] parseQuestion(String question) {
         HashMap<String, Object> options = new HashMap<String, Object>();
         options.put("mode", 1);
         JSONArray result = client.depParser(question, options).getJSONArray("items");
-        System.out.println(result.toString(2));
+        System.out.println(result.toString(2) + "\n");
+        if (result.length() == 3) {
+            String[] parsedArray = new String[3];
+            for (int i = 0; i < result.length(); i++) {
+                parsedArray[i] = result.getJSONObject(i).getString("word");
+                System.out.println(parsedArray[i]);
+            }
+            return parsedArray;
+        }
+        for (int i = 0; i < result.length(); i++) {
+            JSONObject item = result.getJSONObject(i);
+            if ("SBV".equals(item.getString("deprel")) && item.getString("postag").contains("n")) {
 
+            }
+        }
+        return null;
     }
 
     public static JSONObject getObjectById(JSONArray array, int id) {
@@ -198,6 +212,10 @@ public class NLPUtil {
         } else {
             return false;
         }
+    }
+
+    public static void main(String[] args) {
+        parseQuestion("大西洋取自哪里");
     }
 
 }
