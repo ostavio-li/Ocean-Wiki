@@ -21,8 +21,7 @@ spring:
 #    database: 0
 
 logging:
-  level:
-    com.carlos.ocean: debug
+  level: info
 
 management:
   endpoint:

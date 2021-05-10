@@ -23,7 +23,7 @@ public class KGService {
 
     // TODO: 2021/4/20 搜索答案
     public String searchForAnswer(String question) {
-        return "意大利传教士利玛窦撰写的《山海舆地全图》";
+        return KGUtil.getInstance().searchForAnswer(question);
     }
 
 }

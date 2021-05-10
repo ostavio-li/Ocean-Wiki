@@ -3,6 +3,8 @@ package com.carlos.util.nlp;
 import com.baidu.aip.nlp.AipNlp;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +24,8 @@ public class NLPUtil {
     private static final int SOCKET_TIMEOUT_MS = 6000;
 
     private static final AipNlp client = new AipNlp(APP_ID, API_KEY, SECRET_KEY);
+
+    private static Logger logger = LoggerFactory.getLogger("nlp");
 
     static {
         client.setConnectionTimeoutInMillis(CONNECTION_TIMEOUT_MS);
@@ -153,10 +157,12 @@ public class NLPUtil {
      * @param question 问句
      */
     public static String[] parseQuestion(String question) {
+        logger.info("开始解析问句: " + question);
         HashMap<String, Object> options = new HashMap<String, Object>();
         options.put("mode", 1);
         JSONArray result = client.depParser(question, options).getJSONArray("items");
         System.out.println(result.toString(2) + "\n");
+
         if (result.length() == 3) {
             String[] parsedArray = new String[3];
             for (int i = 0; i < result.length(); i++) {
@@ -165,13 +171,133 @@ public class NLPUtil {
             }
             return parsedArray;
         }
-        for (int i = 0; i < result.length(); i++) {
-            JSONObject item = result.getJSONObject(i);
-            if ("SBV".equals(item.getString("deprel")) && item.getString("postag").contains("n")) {
 
+        // 判断是否为 "的"字句
+        boolean hasDe = false;
+        for (int i = 0; i < result.length(); i++) {
+            if ("DE".equals(result.getJSONObject(i).getString("deprel"))) {
+                hasDe = true;
+                break;
             }
         }
-        return null;
+
+//        for (int i = 0; i < result.length(); i++) {
+//            JSONObject item = result.getJSONObject(i);
+//
+//            // 组装主语
+//
+//            if ("SBV".equals(item.getString("deprel")) && item.getString("postag").contains("n")) {
+//                int subId = i;
+//                for (int j = 0; j < subId; j++) {
+//                    // TODO: 2021/5/5 组装主语
+//                    JSONObject temp = result.getJSONObject(j);
+//                    if ("ATT".equals(temp.getString("deprel"))) {
+////                        sub.append(temp.getString("word"));
+//                    }
+//                }
+//
+//            }
+//        }
+
+        // 返回数组
+        String[] parsed = new String[3];
+
+        int subId = -1;     // 主语ID
+        int verbId = -1;    // 谓语ID
+        int objId = -1;     // 宾语ID
+
+        //TODO 非“的”字句解析
+        if (!hasDe) {
+            logger.info("非'的'字句");
+            for (int i = result.length() - 1; i  >= 0; i--) {
+                JSONObject item = result.getJSONObject(i);
+                if ("SBV".equals(item.getString("deprel"))) {
+                    subId = i;
+
+                    // 组装主语
+                    StringBuilder sub = new StringBuilder();
+                    for (int j = 0; j <= subId; j++) {
+                        sub.append(result.getJSONObject(j).getString("word"));
+                    }
+                    parsed[0] = sub.toString();
+
+                    // 找 谓语
+                    for (int j = result.length() - 1; j > subId; j--) {
+                        JSONObject currVerb = result.getJSONObject(j);
+                        if (
+                                "SBV".equals(currVerb.getString("deprel"))
+                                || "HED".equals(currVerb.getString("deprel"))
+                        ) {
+                            verbId = j;
+                            // 组装谓语
+                            StringBuilder verb = new StringBuilder();
+                            for (int k = subId + 1; k <= verbId; k++) {
+                                JSONObject temp = result.getJSONObject(k);
+                                if (
+                                        //TODO 谓语条件
+                                        "ADV".equals(temp.getString("deprel"))
+                                        || "POB".equals(temp.getString("deprel"))
+                                        || "HED".equals(temp.getString("deprel"))
+                                ) {
+                                    verb.append(temp.getString("word"));
+                                }
+                            }
+                            parsed[1] = verb.toString();
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        } else {
+            //TODO “的”字句解析
+            logger.info("此问句为'的'字句");
+            for (int i = result.length() - 1; i  >= 0 ; i--) {
+                JSONObject item = result.getJSONObject(i);
+                if (
+                        "DE".equals(item.getString("deprel"))
+                        && item.getString("postag").contains("n")
+                ) {
+                    StringBuilder sub = new StringBuilder();
+                    subId = i;
+                    for (int j = 0; j <= subId; j++) {
+                        // TODO: 2021/5/5 组装主语
+                        JSONObject temp = result.getJSONObject(j);
+                        if (
+                                "ATT".equals(temp.getString("deprel"))
+                                || "DE".equals(temp.getString("deprel"))
+                        ) {
+                            sub.append(temp.getString("word"));
+                        }
+                    }
+                    parsed[0] = sub.toString();
+
+                    // 找 谓语
+                    for (int j = result.length() - 1; j > subId; j--) {
+                        JSONObject currVerb = result.getJSONObject(j);
+                        if (
+                                "SBV".equals(currVerb.getString("deprel"))
+                                || "HED".equals(currVerb.getString("deprel"))
+                        ) {
+                            parsed[1] = currVerb.getString("word");
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+
+
+
+
+
+
+        System.out.println("Sub: " + parsed[0]);
+        System.out.println("Verb: " + parsed[1]);
+
+        return parsed;
     }
 
     public static JSONObject getObjectById(JSONArray array, int id) {
@@ -215,7 +341,11 @@ public class NLPUtil {
     }
 
     public static void main(String[] args) {
-        parseQuestion("大西洋取自哪里");
+        String[] parsed = parseQuestion("大西洋从赤道分为什么");
+        for (String s : parsed) {
+            System.out.println(s);
+        }
+
     }
 
 }

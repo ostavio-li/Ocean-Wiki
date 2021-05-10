@@ -14,15 +14,18 @@ import java.util.*;
  */
 public class KGUtil implements AutoCloseable {
 
+    private static String uri = "bolt://localhost:7687";
+    private static String userName = "neo4j";
+    private static String password = "carlos";
+
     private final Driver driver;
     private final Deque<String> stack;
+
     private Double similarity;
     private Integer maxStackSize;
-    private static final KGUtil instance = new KGUtil(
-            "bolt://localhost:7687",
-            "neo4j",
-            "carlos"
-    );
+
+    // Singleton
+    private static final KGUtil instance = new KGUtil(uri, userName, password);
 
     private KGUtil(String uri, String username, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password));
@@ -51,8 +54,6 @@ public class KGUtil implements AutoCloseable {
             }
             return names;
 
-//                return "";
-//            });
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -145,7 +146,7 @@ public class KGUtil implements AutoCloseable {
 
         }
 
-        // TODO: 2021/4/4 插入前，判断存在，防止递归内层重复插入节点！
+        // 插入前，判断存在，防止递归内层重复插入节点！
 
         if (!exists(findTitle)) {
 
@@ -172,8 +173,8 @@ public class KGUtil implements AutoCloseable {
                 continue;
             }
 
-            sentence = title + sentence;
-            sentence = sentence.replaceAll(title + title, title);
+            // 开头去重
+            sentence = (title + sentence).replaceAll(title + title, title);
 
             // 转 简体
             sentence = ZhConverterUtil.toSimple(sentence);
@@ -270,6 +271,45 @@ public class KGUtil implements AutoCloseable {
 
     public Double getSimilarity() {
         return similarity;
+    }
+
+    public String searchForAnswer(String question) {
+
+        // 模糊查询模板
+        String cypherFormat = "match(a:Sub) - [r:%s] -> (b:Obj) where a.name=~'.*%s.*' return b.name";
+//
+        String[] items = NLPUtil.parseQuestion(ZhConverterUtil.toSimple(question));
+
+
+//        String subject = items[0];
+//        String predict = items[1];
+//        try (Session session = driver.session()) {
+//            Result result = session.run(String.format(cypherFormat, items));
+//            while (result.hasNext()) {
+//                Record record = result.next();
+//
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//            return null;
+//        }
+
+
+        String cypher = String.format(cypherFormat, items[1], items[0]);
+
+        try (Session session = driver.session()) {
+            Result result = session.run(cypher);
+            while (result.hasNext()) {
+                Record next = result.next();
+                System.out.println(next.asMap().toString());
+            }
+        }
+
+        return "";
+    }
+
+    public static void main(String[] args) {
+        KGUtil.getInstance().searchForAnswer("大西洋从赤道分为什么");
     }
 
 }
