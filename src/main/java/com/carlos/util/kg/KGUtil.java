@@ -296,17 +296,20 @@ public class KGUtil implements AutoCloseable {
 
 
         String cypher = String.format(cypherFormat, items[1], items[0]);
+        System.out.println(cypher);
 
         String res = null;
         try (Session session = driver.session()) {
             Result result = session.run(cypher);
-            while (result.hasNext()) {
+            if (result.hasNext()) {
                 Record next = result.next();
-                res = next.asMap().toString();
+                res = (String) next.asMap().get("b.name");
             }
+        } catch (Exception ex) {
+
         }
 
-        return res;
+        return res != null ? res : "抱歉，未找到结果";
     }
 
     public static void main(String[] args) {

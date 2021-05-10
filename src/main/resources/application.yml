@@ -20,8 +20,8 @@ spring:
 #        max-active: 8
 #    database: 0
 
-logging:
-  level: info
+#logging:
+#  level: info
 
 management:
   endpoint:
