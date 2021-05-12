@@ -279,7 +279,22 @@ public class NLPUtil {
                                 "SBV".equals(currVerb.getString("deprel"))
                                 || "HED".equals(currVerb.getString("deprel"))
                         ) {
-                            parsed[1] = currVerb.getString("word");
+                            verbId = j;
+                            // 组装谓语
+                            StringBuilder verb = new StringBuilder();
+                            for (int k = subId + 1; k <= verbId; k++) {
+                                JSONObject temp = result.getJSONObject(k);
+                                if (
+                                    //TODO 谓语条件
+                                        "ADV".equals(temp.getString("deprel"))
+                                        || "POB".equals(temp.getString("deprel"))
+                                        || "HED".equals(temp.getString("deprel"))
+                                        || "SBV".equals(temp.getString("deprel"))
+                                ) {
+                                    verb.append(temp.getString("word"));
+                                }
+                            }
+                            parsed[1] = verb.toString();
                             break;
                         }
                     }

@@ -276,7 +276,7 @@ public class KGUtil implements AutoCloseable {
     public String searchForAnswer(String question) {
 
         // 模糊查询模板
-        String cypherFormat = "match(a:Sub) - [r:%s] -> (b:Obj) where a.name=~'.*%s.*' return b.name";
+        String cypherFormat = "match(a:Sub) - [r] -> (b:Obj) where a.name=~'.*%s.*' and type(r)=~'.*%s.*' return b.name";
 //
         String[] items = NLPUtil.parseQuestion(ZhConverterUtil.toSimple(question));
 
@@ -295,7 +295,7 @@ public class KGUtil implements AutoCloseable {
 //        }
 
 
-        String cypher = String.format(cypherFormat, items[1], items[0]);
+        String cypher = String.format(cypherFormat, items[0], items[1]);
         System.out.println(cypher);
 
         String res = null;
@@ -304,9 +304,10 @@ public class KGUtil implements AutoCloseable {
             if (result.hasNext()) {
                 Record next = result.next();
                 res = (String) next.asMap().get("b.name");
+                System.out.println("结果：" + res);
             }
         } catch (Exception ex) {
-
+            ex.printStackTrace();
         }
 
         return res != null ? res : "抱歉，未找到结果";
