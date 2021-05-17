@@ -12,11 +12,21 @@ import java.util.*;
  * @author EdwardLee
  * @date 2021/3/30
  */
+
+// match(a:Sub)-[r]->(b:Obj) where not(a.name in ['大西洋中洋脊间普遍水深', '大西洋分界'])  return a,r,b
+// match(a) detach delete a
+
 public class KGUtil implements AutoCloseable {
 
     private static String uri = "bolt://localhost:7687";
     private static String userName = "neo4j";
     private static String password = "carlos";
+
+    private static final int INTERRUPTED = 1;
+    private static final int UNINTERRUPTED = 0;
+
+    // 监控中断构建的信号量
+    private volatile static int semaphore = UNINTERRUPTED;
 
     private final Driver driver;
     private final Deque<String> stack;
@@ -36,6 +46,10 @@ public class KGUtil implements AutoCloseable {
 
     public static KGUtil getInstance() {
         return instance;
+    }
+
+    public void interruptBuild() {
+        semaphore = INTERRUPTED;
     }
 
     public List<String> showNames() {
@@ -111,8 +125,8 @@ public class KGUtil implements AutoCloseable {
     }
 
     public void clear() {
-        String cypher = "match(a) detach delete a";
-
+        String cypher = "match(a:Sub)-[r]->(b:Obj) where not(a.name in ['大西洋', '印度洋'])  delete a,r,b";
+        semaphore = UNINTERRUPTED;
         try (Session session = driver.session()) {
             session.run(cypher);
             System.out.println("清空完成!");
@@ -121,7 +135,11 @@ public class KGUtil implements AutoCloseable {
         }
     }
 
-    public void build(String title, int level) {
+    public void build(String title, int level) throws InterruptedException {
+
+        if (semaphore == INTERRUPTED) {
+            throw new InterruptedException("暂停构建");
+        }
 
         if (level < 1) {
             return;

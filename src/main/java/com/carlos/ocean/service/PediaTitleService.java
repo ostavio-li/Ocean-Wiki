@@ -5,6 +5,7 @@ import com.carlos.ocean.repository.PediaTitleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 /**
@@ -28,6 +29,16 @@ public class PediaTitleService {
 
     public List<PediaTitle> listPediaTitle() {
         return repository.findAll();
+    }
+
+    @Transactional
+    public void deletePediaTitle(String title) {
+        repository.deleteAllByTitle(title);
+    }
+
+    @Transactional
+    public void clearAll() {
+        repository.deleteAll();
     }
 
 }

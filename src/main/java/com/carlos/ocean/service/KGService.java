@@ -26,4 +26,8 @@ public class KGService {
         return KGUtil.getInstance().searchForAnswer(question);
     }
 
+    public void pauseBuild() {
+        KGUtil.getInstance().interruptBuild();
+    }
+
 }
