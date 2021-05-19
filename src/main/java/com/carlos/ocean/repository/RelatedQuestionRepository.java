@@ -16,4 +16,5 @@ import java.util.List;
 public interface RelatedQuestionRepository extends JpaRepository<RelatedQuestion, Integer> {
     List<RelatedQuestion> findAllByTitle(String title);
     List<RelatedQuestion> findAllByTitleAndQuestionNot(String title, String question);
+    List<RelatedQuestion> findAllByQuestionLike(String question);
 }

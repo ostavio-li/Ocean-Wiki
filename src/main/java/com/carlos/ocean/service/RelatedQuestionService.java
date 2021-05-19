@@ -2,6 +2,7 @@ package com.carlos.ocean.service;
 
 import com.carlos.ocean.pojo.RelatedQuestion;
 import com.carlos.ocean.repository.RelatedQuestionRepository;
+import com.carlos.util.nlp.NLPUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,14 @@ public class RelatedQuestionService {
 
     public List<RelatedQuestion> listAllByTitleWithoutQuestion(String title, String question) {
         return repository.findAllByTitleAndQuestionNot(title, question);
+    }
+
+    public List<RelatedQuestion> listAllByQuestionLike(String question) {
+        return repository.findAllByQuestionLike(question);
+    }
+
+    public RelatedQuestion saveRelatedQuestion(RelatedQuestion question) {
+        return repository.save(question);
     }
 
 }

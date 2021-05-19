@@ -23,6 +23,8 @@ public class NLPUtil {
     private static final int CONNECTION_TIMEOUT_MS = 2000;
     private static final int SOCKET_TIMEOUT_MS = 6000;
 
+    public static final double MAX_SMOOTH = 4000.0;
+
     private static final AipNlp client = new AipNlp(APP_ID, API_KEY, SECRET_KEY);
 
     private static Logger logger = LoggerFactory.getLogger("nlp");
@@ -356,11 +358,48 @@ public class NLPUtil {
     }
 
     public static void main(String[] args) {
-        String[] parsed = parseQuestion("大西洋从赤道分为什么");
-        for (String s : parsed) {
-            System.out.println(s);
-        }
+        System.out.println(getSmooth("大西洋最早来自大约是哪里"));
+    }
 
+    public static double getSmooth(String text) {
+        JSONObject jsonObject = client.dnnlmCn(text, new HashMap<>());
+        System.out.println(jsonObject.toString(2));
+        return jsonObject.getDouble("ppl");
+    }
+
+    public static String generateQuestion(String sub, String verb) {
+        StringBuilder question = new StringBuilder();
+        double smooth = 10000;
+        String[] questionWordArray = new String[]{
+                "",
+                "是多少",
+                "是什么",
+                "是哪里",
+                "多少",
+                "什么",
+                "哪里"
+        };
+        String tempQuestion = null;
+        for (String questionWord : questionWordArray) {
+            question.append(sub);
+            question.append(verb);
+            question.append(questionWord);
+            double smoothResult = getSmooth(question.toString());
+            if (smoothResult > MAX_SMOOTH) {
+                continue;
+            }
+            if (smoothResult < smooth) {
+                smooth = smoothResult;
+                tempQuestion = question.toString();
+            }
+            question.delete(0, question.length());
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return tempQuestion;
     }
 
 }
