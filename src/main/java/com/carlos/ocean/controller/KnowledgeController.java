@@ -52,7 +52,7 @@ public class KnowledgeController {
 
     @DeleteMapping("")
     public ResponseEntity<Void> clear() {
-        KGUtil.getInstance().clear();
+        service.clear();
         pediaTitleService.clearAll();
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -65,7 +65,7 @@ public class KnowledgeController {
         logger.info("Recurrence: " + recurrence);
         System.out.println("KGTitle: " + kgTitle);
         try {
-            KGUtil.getInstance().build(kgTitle, recurrence);
+            service.build(kgTitle, recurrence);
         } catch (InterruptedException e) {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
         }

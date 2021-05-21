@@ -49,7 +49,7 @@ public class NLPUtil {
         // **********************
 
         JSONObject result = client.depParser(target, null);
-        System.out.println(result.toString(2));
+//        System.out.println(result.toString(2));
 
         JSONArray items = result.getJSONArray("items");
 //        System.out.println(items.toString(2));
@@ -358,12 +358,16 @@ public class NLPUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(getSmooth("大西洋最早来自大约是哪里"));
+        System.out.println(generateQuestion("北冰洋", "位于"));
     }
 
     public static double getSmooth(String text) {
         JSONObject jsonObject = client.dnnlmCn(text, new HashMap<>());
-        System.out.println(jsonObject.toString(2));
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return jsonObject.getDouble("ppl");
     }
 
@@ -372,9 +376,6 @@ public class NLPUtil {
         double smooth = 10000;
         String[] questionWordArray = new String[]{
                 "",
-                "是多少",
-                "是什么",
-                "是哪里",
                 "多少",
                 "什么",
                 "哪里"
@@ -386,6 +387,7 @@ public class NLPUtil {
             question.append(questionWord);
             double smoothResult = getSmooth(question.toString());
             if (smoothResult > MAX_SMOOTH) {
+                question.delete(0, question.length());
                 continue;
             }
             if (smoothResult < smooth) {
@@ -393,11 +395,6 @@ public class NLPUtil {
                 tempQuestion = question.toString();
             }
             question.delete(0, question.length());
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
         return tempQuestion;
     }

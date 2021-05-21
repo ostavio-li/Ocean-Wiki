@@ -1,18 +1,24 @@
 package com.carlos.ocean.pojo;
 
+import lombok.Data;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 /**
- * @author EdwardLee
+ * 用户
+ * @author Carlos Li
  * @date 2021/3/5
  */
 
+@Data
 @Entity
-public class User {
+public class User implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,32 +27,6 @@ public class User {
     @NotNull
     private String userName;
 
-//    private String userPassword;
-
-
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-//    public String getUserPassword() {
-//        return userPassword;
-//    }
-//
-//    public void setUserPassword(String userPassword) {
-//        this.userPassword = userPassword;
-//    }
+    private String password;
 
 }

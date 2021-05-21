@@ -20,6 +20,12 @@ public class RelatedQuestion {
     private String question;
     private String title;
 
+    public RelatedQuestion() {}
+
+    public RelatedQuestion(String question, String title) {
+        this.question = question;
+        this.title = title;
+    }
 
     public Integer getId() {
         return id;
@@ -43,5 +49,14 @@ public class RelatedQuestion {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    @Override
+    public String toString() {
+        return "RelatedQuestion{" +
+               "id=" + id +
+               ", question='" + question + '\'' +
+               ", title='" + title + '\'' +
+               '}';
     }
 }

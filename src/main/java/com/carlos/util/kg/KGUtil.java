@@ -1,10 +1,12 @@
 package com.carlos.util.kg;
 
+import com.carlos.ocean.service.RelatedQuestionService;
 import com.carlos.util.http.HttpUtil;
 import com.carlos.util.nlp.NLPUtil;
 import com.carlos.util.reg.RegUtil;
 import com.github.houbb.opencc4j.util.ZhConverterUtil;
 import org.neo4j.driver.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -22,34 +24,17 @@ public class KGUtil implements AutoCloseable {
     private static String userName = "neo4j";
     private static String password = "carlos";
 
-    private static final int INTERRUPTED = 1;
-    private static final int UNINTERRUPTED = 0;
-
-    // 监控中断构建的信号量
-    private volatile static int semaphore = UNINTERRUPTED;
-
     private final Driver driver;
-    private final Deque<String> stack;
-
-    private Double similarity;
-    private Integer maxStackSize;
 
     // Singleton
     private static final KGUtil instance = new KGUtil(uri, userName, password);
 
     private KGUtil(String uri, String username, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(username, password));
-        this.stack = new ArrayDeque<>(10);
-        this.similarity = 0.5;
-        this.maxStackSize = 10;
     }
 
     public static KGUtil getInstance() {
         return instance;
-    }
-
-    public void interruptBuild() {
-        semaphore = INTERRUPTED;
     }
 
     public List<String> showNames() {
@@ -126,7 +111,6 @@ public class KGUtil implements AutoCloseable {
 
     public void clear() {
         String cypher = "match(a:Sub)-[r]->(b:Obj) where not(a.name in ['大西洋', '印度洋'])  delete a,r,b";
-        semaphore = UNINTERRUPTED;
         try (Session session = driver.session()) {
             session.run(cypher);
             System.out.println("清空完成!");
@@ -135,125 +119,125 @@ public class KGUtil implements AutoCloseable {
         }
     }
 
-    public void build(String title, int level) throws InterruptedException {
-
-        if (semaphore == INTERRUPTED) {
-            throw new InterruptedException("暂停构建");
-        }
-
-        if (level < 1) {
-            return;
-        }
-
-        if (this.stack.size() >= maxStackSize) {
-            return;
-        }
-
-        System.out.println("Title: " + title);
-
-        // 获取 文章
-        String article = HttpUtil.findArticleByTitle(title);
-        String findTitle = title;
-        if (article == null || article.length() == 0) {
-            findTitle = HttpUtil.findTitle(title);
-            if (findTitle != null) {
-                article = HttpUtil.findArticleByTitle(findTitle);
-            } else {
-                return;
-            }
-
-        }
-
-        // 插入前，判断存在，防止递归内层重复插入节点！
-
-        if (!exists(findTitle)) {
-
-            if (!this.stack.isEmpty()) {
-                if (NLPUtil.checkSimilarity(this.stack.peekLast(), findTitle, this.similarity)) {
-                    addNode(findTitle);
-                    this.stack.offerLast(findTitle);
-                } else {
-                    return;
-                }
-            } else {
-                addNode(findTitle);
-                this.stack.offerLast(findTitle);
-            }
-
-
-        }
-
-        // 分句
-        List<String> sentences = RegUtil.splitSentences(article);
-
-        for (String sentence : sentences) {
-            if (sentence == null || sentence.length() == 0) {
-                continue;
-            }
-
-            // 开头去重
-            sentence = (title + sentence).replaceAll(title + title, title);
-
-            // 转 简体
-            sentence = ZhConverterUtil.toSimple(sentence);
-
-            String[] parse = NLPUtil.parse(sentence);
-            if (parse != null) {
-
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-//                for (int i = 0; i < parse.length; i++) {
-//                    parse[i] = ZhConverterUtil.toSimple(parse[i]);
+//    public void build(String title, int level) throws InterruptedException {
+//
+//        if (semaphore == INTERRUPTED) {
+//            throw new InterruptedException("暂停构建");
+//        }
+//
+//        if (level < 1) {
+//            return;
+//        }
+//
+//        if (this.stack.size() >= maxStackSize) {
+//            return;
+//        }
+//
+//        System.out.println("Title: " + title);
+//
+//        // 获取 文章
+//        String article = HttpUtil.findArticleByTitle(title);
+//        String findTitle = title;
+//        if (article == null || article.length() == 0) {
+//            findTitle = HttpUtil.findTitle(title);
+//            if (findTitle != null) {
+//                article = HttpUtil.findArticleByTitle(findTitle);
+//            } else {
+//                return;
+//            }
+//
+//        }
+//
+//        // 插入前，判断存在，防止递归内层重复插入节点！
+//
+//        if (!exists(findTitle)) {
+//
+//            if (!this.stack.isEmpty()) {
+//                if (NLPUtil.checkSimilarity(this.stack.peekLast(), findTitle, this.similarity)) {
+//                    addNode(findTitle);
+//                    this.stack.offerLast(findTitle);
+//                } else {
+//                    return;
 //                }
-
-
-
-                if (KGUtil.getInstance().showNames().contains(parse[0])) {
-                    KGUtil.getInstance().addExists(parse);
-                } else {
-                    KGUtil.getInstance().addRelation(parse);
-                }
-
-//                if (!KGUtil.getInstance().existAbout(findTitle, parse[0])) {
-//                    if (!findTitle.equals(parse[0])) {
-//                        String[] temp = new String[3];
-//                        temp[0] = findTitle;
-//                        temp[1] = "有关";
-//                        temp[2] = parse[0];
-//                        KGUtil.getInstance().addLink(temp);
-//                    }
+//            } else {
+//                addNode(findTitle);
+//                this.stack.offerLast(findTitle);
+//            }
+//
+//
+//        }
+//
+//        // 分句
+//        List<String> sentences = RegUtil.splitSentences(article);
+//
+//        for (String sentence : sentences) {
+//            if (sentence == null || sentence.length() == 0) {
+//                continue;
+//            }
+//
+//            // 开头去重
+//            sentence = (title + sentence).replaceAll(title + title, title);
+//
+//            // 转 简体
+//            sentence = ZhConverterUtil.toSimple(sentence);
+//
+//            String[] parse = NLPUtil.parse(sentence);
+//            if (parse != null) {
+//
+//                try {
+//                    Thread.sleep(2000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
 //                }
-
-
-
-                System.out.println("Sub: " + parse[0]);
-                System.out.println("Verb: " + parse[1]);
-                System.out.println("Obj: " + parse[2]);
-                System.out.println();
-
-//                String[] nextParse = NLPUtil.parse(parse[2]);
-//                if (nextParse != null) {
-//                    build(nextParse[0], level - 1);
+//
+////                for (int i = 0; i < parse.length; i++) {
+////                    parse[i] = ZhConverterUtil.toSimple(parse[i]);
+////                }
+//
+//
+//
+//                if (KGUtil.getInstance().showNames().contains(parse[0])) {
+//                    KGUtil.getInstance().addExists(parse);
+//                } else {
+//                    KGUtil.getInstance().addRelation(parse);
 //                }
-
-                build(parse[2], level - 1);
-
-            }
-
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-        }
-        this.stack.pollLast();
-
-    }
+//
+////                if (!KGUtil.getInstance().existAbout(findTitle, parse[0])) {
+////                    if (!findTitle.equals(parse[0])) {
+////                        String[] temp = new String[3];
+////                        temp[0] = findTitle;
+////                        temp[1] = "有关";
+////                        temp[2] = parse[0];
+////                        KGUtil.getInstance().addLink(temp);
+////                    }
+////                }
+//
+//
+//
+//                System.out.println("Sub: " + parse[0]);
+//                System.out.println("Verb: " + parse[1]);
+//                System.out.println("Obj: " + parse[2]);
+//                System.out.println();
+//
+////                String[] nextParse = NLPUtil.parse(parse[2]);
+////                if (nextParse != null) {
+////                    build(nextParse[0], level - 1);
+////                }
+//
+//                build(parse[2], level - 1);
+//
+//            }
+//
+//            try {
+//                Thread.sleep(1500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//        }
+//        this.stack.pollLast();
+//
+//    }
 
     @Override
     public void close() throws Exception {
@@ -283,13 +267,6 @@ public class KGUtil implements AutoCloseable {
         }
     }
 
-    public void setSimilarity(Double similarity) {
-        this.similarity = similarity;
-    }
-
-    public Double getSimilarity() {
-        return similarity;
-    }
 
     public String searchForAnswer(String question) {
 
@@ -329,10 +306,6 @@ public class KGUtil implements AutoCloseable {
         }
 
         return res != null ? res : "抱歉，未找到结果";
-    }
-
-    public static void main(String[] args) {
-        KGUtil.getInstance().searchForAnswer("大西洋从赤道分为什么");
     }
 
 }
