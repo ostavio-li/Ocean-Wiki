@@ -1,5 +1,8 @@
 server:
   port: 8080
+  servlet:
+    session:
+      timeout: 1m
 
 spring:
   datasource:
@@ -11,6 +14,12 @@ spring:
     database: mysql
     open-in-view: false
     show-sql: true
+  security:
+    user:
+      name: user
+      password: user
+  session:
+    timeout: 1m
 #  redis:
 #    host: localhost
 #    port: 6379
@@ -23,6 +32,7 @@ spring:
 #logging:
 #  level: info
 
+
 management:
   endpoint:
     shutdown:
@@ -31,3 +41,11 @@ management:
     web:
       exposure:
         include: shutdown
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*Mapper.xml
+
+jwt:
+  header: Authorization
+  expire: 604800 # 7 天 (秒)
+  secret: insei43l0ijomis4j4k3llp2309r431w

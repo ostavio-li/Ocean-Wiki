@@ -1,24 +1,22 @@
 package com.carlos.ocean;
 
-import com.carlos.ocean.mapper.UserMapper;
-import com.carlos.ocean.pojo.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootTest
 class OceanApplicationTests {
 
     @Autowired
-    private UserMapper userMapper;
+    private PasswordEncoder passwordEncoder;
 
     @Test
     void map() {
-        List<User> users = userMapper.selectList(null);
-        users.forEach(System.out::println);
+        System.out.println(passwordEncoder.encode("456"));
     }
+
+
 
     @Test
     void contextLoads() {

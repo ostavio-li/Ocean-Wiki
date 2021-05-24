@@ -2,6 +2,7 @@ package com.carlos.ocean.controller;
 
 import com.carlos.ocean.pojo.RelatedQuestion;
 import com.carlos.ocean.service.RelatedQuestionService;
+import com.carlos.ocean.vo.Result;
 import org.hibernate.usertype.UserVersionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,8 @@ public class RelatedQuestionController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<RelatedQuestion>> listAll() {
-        return ResponseEntity.ok(service.listAll());
+    public Result listAll() {
+        return Result.ok().data("questions", service.listAll());
     }
 
     @GetMapping("/q")

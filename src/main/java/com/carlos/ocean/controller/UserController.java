@@ -1,20 +1,17 @@
 package com.carlos.ocean.controller;
 
-import com.carlos.ocean.pojo.User;
-import com.carlos.ocean.service.UserService;
+import com.carlos.ocean.pojo.SysUser;
+import com.carlos.ocean.service.SysUserService;
+import com.carlos.ocean.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
- * Controller for User
+ * Controller for SysUser
  * @author Carlos.Li
  * @date 2021/3/3
  */
@@ -23,47 +20,62 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
 
-    private UserService userService;
+    private SysUserService sysUserService;
 
     @Autowired
-    public void setUserService(UserService userService) {
-        this.userService = userService;
+    public void setUserService(SysUserService sysUserService) {
+        this.sysUserService = sysUserService;
     }
 
+    @PostMapping("/login")
+    public String login() {
+        return "login";
+    }
 
     @GetMapping("")
-    public ResponseEntity<List<User>> listUsers(
+    public Result listUsers(
             @RequestParam(value = "name", required = false) String userName,
             @PageableDefault(sort = {"id"}) Pageable pageable
     ) {
-        return ResponseEntity.ok(userService.listUsers(userName, pageable));
+//        System.out.println("这是 Mybatis-plus 实现的 list");
+//        return ResponseEntity.ok(sysUserService.list());
+        return Result.ok().data("users", sysUserService.list());
     }
 
     @GetMapping(value = "", params = {"id"})
-    public ResponseEntity<User> findUser(@RequestParam("id") int id) {
-        // TODO: 2021/3/6 按 id 查询 User
+    public ResponseEntity<SysUser> findUser(@RequestParam("id") int id) {
+        // TODO: 2021/3/6 按 id 查询 SysUser
         return null;
     }
 
     @PostMapping("")
-    public ResponseEntity<User> saveUser(
-            @RequestBody @Validated User user
+    public Result saveUser(
+            @RequestBody SysUser sysUser
     ) {
-        return new ResponseEntity<>(userService.saveUser(user), HttpStatus.CREATED);
+        if (sysUserService.save(sysUser)) {
+            return Result.ok().code(HttpStatus.CREATED.value()).data("user", sysUser);
+        } else {
+            return Result.error().message("用户添加失败");
+        }
+
     }
 
     @DeleteMapping("")
-    public ResponseEntity<Boolean> deleteUser(
+    public Result deleteUser(
             @RequestParam("id") int id
     ) {
-        return ResponseEntity.ok(userService.deleteUser(id));
+        return Result.ok().data("deleted", sysUserService.removeById(id));
     }
 
     @PutMapping("")
-    public ResponseEntity<User> updateUser(
-            @RequestBody User user
+    public Result updateUser(
+            @RequestBody SysUser sysUser
     ) {
-        return new ResponseEntity<>(userService.updateUser(user), HttpStatus.CREATED);
+        if (sysUserService.updateById(sysUser)) {
+            return Result.ok().data("user", sysUser);
+        } else {
+            return Result.error().message("用户更新失败");
+        }
     }
 
 }
