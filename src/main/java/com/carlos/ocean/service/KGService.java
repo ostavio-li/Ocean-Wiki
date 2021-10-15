@@ -32,10 +32,16 @@ public class KGService {
     private volatile static int semaphore = UNINTERRUPTED;
 
     private RelatedQuestionService relatedQuestionService;
+    private ArticleService articleService;
 
     @Autowired
     public void setRelatedQuestionService(RelatedQuestionService relatedQuestionService) {
         this.relatedQuestionService = relatedQuestionService;
+    }
+
+    @Autowired
+    public void setArticleService(ArticleService articleService) {
+        this.articleService = articleService;
     }
 
     public void setSimilarity(Double similarity) {
@@ -94,6 +100,8 @@ public class KGService {
             }
 
         }
+
+        articleService.uploadArticle(findTitle, article);
 
         // 插入前，判断存在，防止递归内层重复插入节点！
 

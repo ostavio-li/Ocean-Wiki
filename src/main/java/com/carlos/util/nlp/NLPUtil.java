@@ -160,10 +160,11 @@ public class NLPUtil {
      */
     public static String[] parseQuestion(String question) {
         logger.info("开始解析问句: " + question);
-        HashMap<String, Object> options = new HashMap<String, Object>();
+        HashMap<String, Object> options = new HashMap<>(1);
         options.put("mode", 1);
-        JSONArray result = client.depParser(question, options).getJSONArray("items");
-        System.out.println(result.toString(2) + "\n");
+        JSONObject parseResult = client.depParser(question, options);
+        JSONArray result = parseResult.getJSONArray("items");
+        System.out.println(parseResult.toString(2) + "\n");
 
         if (result.length() == 3) {
             String[] parsedArray = new String[3];
@@ -171,6 +172,14 @@ public class NLPUtil {
                 parsedArray[i] = result.getJSONObject(i).getString("word");
                 System.out.println(parsedArray[i]);
             }
+            return parsedArray;
+        }
+
+        if (result.length() == 1) {
+            String[] parsedArray = new String[1];
+            parsedArray[0] = result.getJSONObject(0).getString("word");
+            System.out.println("Parsed Array when 1: ");
+            System.out.println(parsedArray);
             return parsedArray;
         }
 
@@ -182,24 +191,6 @@ public class NLPUtil {
                 break;
             }
         }
-
-//        for (int i = 0; i < result.length(); i++) {
-//            JSONObject item = result.getJSONObject(i);
-//
-//            // 组装主语
-//
-//            if ("SBV".equals(item.getString("deprel")) && item.getString("postag").contains("n")) {
-//                int subId = i;
-//                for (int j = 0; j < subId; j++) {
-//                    // TODO: 2021/5/5 组装主语
-//                    JSONObject temp = result.getJSONObject(j);
-//                    if ("ATT".equals(temp.getString("deprel"))) {
-////                        sub.append(temp.getString("word"));
-//                    }
-//                }
-//
-//            }
-//        }
 
         // 返回数组
         String[] parsed = new String[3];
@@ -305,11 +296,6 @@ public class NLPUtil {
                 }
             }
         }
-
-
-
-
-
 
         System.out.println("Sub: " + parsed[0]);
         System.out.println("Verb: " + parsed[1]);

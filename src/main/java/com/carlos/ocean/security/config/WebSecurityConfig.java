@@ -1,12 +1,14 @@
 package com.carlos.ocean.security.config;
 
 import com.carlos.ocean.security.MyAuthenticationEntryPoint;
+import com.carlos.ocean.security.filter.JwtAuthenticationFilter;
 import com.carlos.ocean.security.handler.*;
 import com.carlos.ocean.security.strategy.MyInvalidSessionStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -23,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled=true)
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -58,6 +61,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private MyLogoutSuccessHandler myLogoutSuccessHandler;
 
+    @Bean
+    JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
+        return new JwtAuthenticationFilter(authenticationManager());
+    }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService)
@@ -76,15 +84,19 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         String[] permits = new String[]{
                 "/user/login",
                 "/rq",
-                "/kg/search"
+                "/kg/search",
+                "/promotion/all",
+                "/tip/today",
+                "/billboard/show"
         };
 
         http.authorizeRequests()
                 .antMatchers(permits).permitAll()
-                .antMatchers("/user", "/roles").hasAnyRole("USER")
+//                .antMatchers("/user/**/*").hasAnyRole("ADMIN")
                 .anyRequest()
                 .authenticated()
                 .and()
+                .addFilter(jwtAuthenticationFilter())
                 .logout().permitAll()
                 .addLogoutHandler(myLogoutHandler)
                 .logoutSuccessHandler(myLogoutSuccessHandler)
@@ -101,8 +113,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(myAccessDeniedHandler)
                 .authenticationEntryPoint(myAuthenticationEntryPoint)
                 .and()
+                // 关闭 Session
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        // .sessionCreationPolicy(SessionCreationPolicy.STATELESS) .invalidSessionStrategy(myInvalidSessionStrategy)
+
+        // 跨域
         http.csrf().disable();
 
     }

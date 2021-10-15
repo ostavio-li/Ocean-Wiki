@@ -1,10 +1,18 @@
+# Tomcat 配置
 server:
   port: 8080
   servlet:
     session:
       timeout: 1m
 
+# Spring
 spring:
+  mail:
+    host: smtp.163.com
+    protocol: smtp
+    default-encoding: UTF-8
+    username: carlosli99@163.com
+    password: AARXZERYAMPTHOYK
   datasource:
     url: jdbc:mysql://localhost:3306/ocean
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -29,10 +37,12 @@ spring:
 #        max-active: 8
 #    database: 0
 
-#logging:
-#  level: info
+logging:
+  level:
+    root: info
+    com.carlos.ocean: debug
 
-
+# Actuator 配置
 management:
   endpoint:
     shutdown:
@@ -42,10 +52,23 @@ management:
       exposure:
         include: shutdown
 
+# Mybatis-plus 配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*Mapper.xml
 
+# JWT 配置
 jwt:
+  # Header 名
   header: Authorization
-  expire: 604800 # 7 天 (秒)
+  # 过期时间 （秒）
+  expire: 604800  # 7d
+  # 密钥
   secret: insei43l0ijomis4j4k3llp2309r431w
+
+minio:
+  entry-point: 127.0.0.1
+  secure: false
+  root-user: carlosli
+  root-pass: carlosli
+  port: 9000
+  bucket-name: articles

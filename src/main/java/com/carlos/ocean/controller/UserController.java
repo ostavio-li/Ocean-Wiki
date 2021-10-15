@@ -8,7 +8,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Controller for SysUser
@@ -21,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private SysUserService sysUserService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setUserService(SysUserService sysUserService) {
@@ -32,6 +38,7 @@ public class UserController {
         return "login";
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("")
     public Result listUsers(
             @RequestParam(value = "name", required = false) String userName,
@@ -52,8 +59,9 @@ public class UserController {
     public Result saveUser(
             @RequestBody SysUser sysUser
     ) {
+        sysUser.setPassword(passwordEncoder.encode(sysUser.getPassword()));
         if (sysUserService.save(sysUser)) {
-            return Result.ok().code(HttpStatus.CREATED.value()).data("user", sysUser);
+            return Result.ok().data("user", sysUser);
         } else {
             return Result.error().message("用户添加失败");
         }
@@ -71,11 +79,13 @@ public class UserController {
     public Result updateUser(
             @RequestBody SysUser sysUser
     ) {
+        sysUser.setPassword(passwordEncoder.encode(sysUser.getPassword()));
         if (sysUserService.updateById(sysUser)) {
             return Result.ok().data("user", sysUser);
         } else {
             return Result.error().message("用户更新失败");
         }
+
     }
 
 }

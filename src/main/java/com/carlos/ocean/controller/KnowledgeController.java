@@ -2,9 +2,12 @@ package com.carlos.ocean.controller;
 
 import com.carlos.ocean.pojo.PediaTitle;
 import com.carlos.ocean.pojo.RelatedQuestion;
+import com.carlos.ocean.service.ArticleService;
 import com.carlos.ocean.service.KGService;
 import com.carlos.ocean.service.PediaTitleService;
 import com.carlos.ocean.service.RelatedQuestionService;
+import com.carlos.ocean.vo.Result;
+import com.carlos.ocean.vo.ResultCode;
 import com.carlos.util.http.HttpUtil;
 import com.carlos.util.kg.KGUtil;
 import com.carlos.util.nlp.NLPUtil;
@@ -34,6 +37,7 @@ public class KnowledgeController {
     private KGService service;
     private PediaTitleService pediaTitleService;
     private RelatedQuestionService relatedQuestionService;
+    private ArticleService articleService;
 
     @Autowired
     public void setService(KGService service) {
@@ -50,15 +54,21 @@ public class KnowledgeController {
         this.relatedQuestionService = relatedQuestionService;
     }
 
+    @Autowired
+    public void setArticleService(ArticleService articleService) {
+        this.articleService = articleService;
+    }
+
+
     @DeleteMapping("")
-    public ResponseEntity<Void> clear() {
+    public Result clear() {
         service.clear();
         pediaTitleService.clearAll();
-        return new ResponseEntity<>(HttpStatus.OK);
+        return Result.ok();
     }
 
     @GetMapping("")
-    public ResponseEntity<Void> buildKg(
+    public Result buildKg(
             @RequestParam("title") String kgTitle,
             @RequestParam("recurr") int recurrence
     ) {
@@ -67,25 +77,25 @@ public class KnowledgeController {
         try {
             service.build(kgTitle, recurrence);
         } catch (InterruptedException e) {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return Result.ok();
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+        return Result.ok();
     }
 
     @GetMapping("/pause")
-    public ResponseEntity<Void> pauseBuild() {
+    public Result pauseBuild() {
         service.pauseBuild();
-        return new ResponseEntity<>(HttpStatus.ACCEPTED);
+        return Result.ok();
     }
 
     @PutMapping("/sim")
-    public ResponseEntity<Void> updateSimilarity(
+    public Result updateSimilarity(
             @RequestParam("similarity") double similarity
     ) {
         if (service.updateSimilarity(similarity)) {
-            return new ResponseEntity<>(HttpStatus.OK);
+            return Result.ok();
         } else {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return Result.error();
         }
     }
 
@@ -95,57 +105,77 @@ public class KnowledgeController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Map<String, Object>> searchForAnswer(
+    public Result searchForAnswer(
             @RequestParam("question") String question
     ) {
         String[] parsed = NLPUtil.parseQuestion(question);
         String title = parsed[0];
-        // 获取 文章
-        String article = HttpUtil.findArticleByTitle(title);
         String findTitle = title;
-        if (article == null || article.length() == 0) {
-            findTitle = HttpUtil.findTitle(title);
-            if (findTitle != null) {
-                article = HttpUtil.findArticleByTitle(findTitle);
-            } else {
-                article = "";
+        // 从系统获取文章
+        String article = articleService.getArticle(title);
+
+        if (article == null) {
+
+            System.out.println("开始爬取文章");
+            // 用 title 爬取文章
+            article = HttpUtil.findArticleByTitle(title);
+
+            if (article == null || article.length() == 0) {
+                findTitle = HttpUtil.findTitle(title);
+                if (findTitle != null) {
+                    article = HttpUtil.findArticleByTitle(findTitle);
+                } else {
+                    article = "";
+                }
             }
         }
-        List<RelatedQuestion> relatedQuestions = relatedQuestionService.listAllByTitleWithoutQuestion(findTitle, question);
+
         Map<String, Object> map = new HashMap<>(4);
+
+        if (parsed.length == 1) {
+            map.put("title", findTitle);
+            map.put("article", ZhConverterUtil.toSimple(article));
+            map.put("answer", "见下文");
+            map.put("related", relatedQuestionService.listAllByTitleWithoutQuestion(findTitle, ""));
+            return Result.ok().data(map);
+        }
+
+
+        List<RelatedQuestion> relatedQuestions = relatedQuestionService.listAllByTitleWithoutQuestion(findTitle, question);
+
         map.put("title", findTitle);
         map.put("article", ZhConverterUtil.toSimple(article));
         map.put("answer", service.searchForAnswer(question));
         map.put("related", relatedQuestions);
-        return ResponseEntity.ok(map);
+        return Result.ok().data(map);
     }
 
     @GetMapping("/title")
-    public ResponseEntity<List<PediaTitle>> listTitle() {
-        return ResponseEntity.ok(pediaTitleService.listPediaTitle());
+    public Result listTitle() {
+        return Result.ok().data("titles", pediaTitleService.listPediaTitle());
     }
 
     @PostMapping("/title")
-    public ResponseEntity<PediaTitle> saveTitle(
+    public Result saveTitle(
             @RequestBody PediaTitle pediaTitle
     ) {
         PediaTitle savedPediaTitle = pediaTitleService.savePediaTitle(pediaTitle);
-        return ResponseEntity.ok(savedPediaTitle);
+        return Result.ok().data("title", savedPediaTitle);
     }
 
     @DeleteMapping("/title")
-    public ResponseEntity<Void> deleteTitle(
+    public Result deleteTitle(
             @RequestParam("title") String title
     ) {
         pediaTitleService.deletePediaTitle(title);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return Result.ok();
     }
 
-    @GetMapping("/wikititle")
-    public ResponseEntity<String> findWikiTitle(
-            @RequestParam("title") String title
-    ) {
-        return ResponseEntity.ok(HttpUtil.findTitle(title));
-    }
+//    @GetMapping("/wikititle")
+//    public Result findWikiTitle(
+//            @RequestParam("title") String title
+//    ) {
+//        return ResponseEntity.ok(HttpUtil.findTitle(title));
+//    }
 
 }

@@ -22,16 +22,10 @@ import java.util.List;
 
 @Service("customerUserDetailsService")
 public class CustomerUserDetailsService implements UserDetailsService {
-
+    @Autowired
     private SysUserService sysUserService;
     @Autowired
     private SysUserMapper sysUserMapper;
-
-    @Autowired
-    public void setUserService(SysUserService sysUserService) {
-        this.sysUserService = sysUserService;
-    }
-
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
