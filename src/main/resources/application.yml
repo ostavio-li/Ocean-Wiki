@@ -68,7 +68,7 @@ jwt:
 minio:
   entry-point: 127.0.0.1
   secure: false
-  root-user: carlosli
-  root-pass: carlosli
+  root-user: admin
+  root-pass: password
   port: 9000
   bucket-name: articles
